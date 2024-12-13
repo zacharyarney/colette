@@ -6,7 +6,7 @@
 
 bool isDirectory(const char *path);
 bool isIncluded(const char *fileName);
-char *getBasename(const char *path, char *buffer, size_t size);
+int getBasename(const char *path, char *buffer, size_t size);
 int collateFile(const char *path, FILE *outFile);
 int readIndexFile(const char *path);
 

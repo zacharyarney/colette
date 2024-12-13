@@ -140,7 +140,7 @@ Testing should be ongoing throughout development.
 
 ## Immediate Next Steps
 
-1. [ ] Update argument parsing to remove format requirements
+1. [x] Update argument parsing to remove format requirements
 2. [ ] Implement relative path calculations for symlinks
 3. [ ] Create sequential numbering system
 4. [ ] Build symlink creation functionality
