@@ -1,0 +1,7 @@
+CompileFlags:
+  CompilationDatabase: .
+  Add: [-Wall, -Wextra, -std=c11, -pedantic]
+Language:
+  C
+Diagnostics:
+  UnusedIncludes: Strict
