@@ -1,3 +1,4 @@
+#include "constants.h"
 #include "files.h"
 #include <errno.h>
 #include <libgen.h>
@@ -11,6 +12,9 @@
 bool isDirectory(const char *path) {
     struct stat statBuf;
     if (stat(path, &statBuf) != 0) {
+        if (errno != ENOENT) {
+            fprintf(stderr, "Error: %s\n", strerror(errno));
+        }
         return false;
     }
     return S_ISDIR(statBuf.st_mode);
@@ -60,7 +64,7 @@ int joinPath(char *buffer, size_t buffSize, const char *dir, const char *file) {
     if (!dir || !file || !buffer) {
         return -1;
     }
-    if (buffSize < PATH_MAX) {
+    if (buffSize < COLETTE_PATH_BUF_SIZE) {
         return -1;
     }
     if (file[0] == '/') {
@@ -109,7 +113,7 @@ int collateFile(const char *path, FILE *outFileP) {
         return -1;
     }
 
-    while ((bytesRead = fread(buffer, 1, sizeof(buffer), inFileP) > 0)) {
+    while ((bytesRead = fread(buffer, 1, sizeof(buffer), inFileP)) > 0) {
         size_t bytesWritten = fwrite(buffer, 1, sizeof(buffer), outFileP);
         if (bytesWritten != bytesRead) {
             fprintf(stderr, "Error writing %s to output: %s\n", path,

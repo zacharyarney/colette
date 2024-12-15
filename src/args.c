@@ -1,7 +1,9 @@
 #include "args.h"
+#include "constants.h"
 #include <errno.h>
 #include <getopt.h>
 #include <limits.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,7 +17,7 @@ static struct option longOpts[] = {
 
 static unsigned int stringToUint(const char *str, char **endptr,
                                  bool *success) {
-    if (str == NULL || success == NULL) {
+    if (!str || !success) {
         if (success) {
             *success = false;
         }
@@ -50,21 +52,32 @@ static unsigned int validatePadding(char *paddingArg, enum ArgError *status) {
 }
 
 static char *validateDirectory(char *directory, enum ArgError *status) {
-    char resolvedPath[PATH_MAX];
-    char *newPath;
+    char resolvedPath[COLETTE_PATH_BUF_SIZE];
 
-    if (directory == NULL) {
+    if (!directory) {
         *status = ARG_MISSING_DIR;
         return NULL;
     }
     if (realpath(directory, resolvedPath) == NULL) {
         *status = ARG_INVALID_DIR;
+        switch (errno) {
+        case EACCES:
+            *status = ARG_NO_DIR_ACCESS;
+            break;
+        case ENOENT:
+            *status = ARG_INVALID_DIR;
+            break;
+        default:
+            fprintf(stderr, "Error resolving path %s: %s\n", directory,
+                    strerror(errno));
+            *status = ARG_INVALID_DIR;
+        }
         return NULL;
     }
 
     // dynamically allocate memory for absolute path
-    newPath = strdup(resolvedPath);
-    if (newPath == NULL) {
+    char *newPath = strdup(resolvedPath);
+    if (!newPath) {
         *status = ARG_MEMORY_ERROR;
         return NULL;
     }
