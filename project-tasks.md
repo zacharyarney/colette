@@ -110,7 +110,11 @@ Features to consider for future versions of colette.
     - Implement backup system
     - Add version control integration
     - Create collaborative features
-    - Support different organization schemes
+- [ ] Implement robust path handling
+    - Replace static buffers with dynamic allocation
+    - Handle arbitrary path lengths
+    - Support filesystem-specific limitations
+    - Add proper error reporting for path-related issues- Support different organization schemes
 
 ## Testing Strategy
 
