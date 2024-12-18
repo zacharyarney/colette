@@ -10,6 +10,8 @@ enum ArgError {
     ARG_MISSING_PADDING,
     ARG_INVALID_PADDING,
     ARG_PADDING_RANGE,
+    ARG_MISSING_TITLE,
+    ARG_INVALID_TITLE,
     ARG_NO_DIR_ACCESS,
     ARG_CONFLICTING_FLAGS,
     ARG_INVALID_OPT,
@@ -18,6 +20,7 @@ enum ArgError {
 
 struct Arguments {
     char *directory;
+    char *title;
     bool initMode;
     bool checkMode;
     bool outputDirMode;
