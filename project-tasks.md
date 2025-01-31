@@ -110,7 +110,11 @@ Features to consider for future versions of colette.
     - Implement backup system
     - Add version control integration
     - Create collaborative features
-    - Support different organization schemes
+- [ ] Implement robust path handling
+    - Replace static buffers with dynamic allocation
+    - Handle arbitrary path lengths
+    - Support filesystem-specific limitations
+    - Add proper error reporting for path-related issues- Support different organization schemes
 
 ## Testing Strategy
 
@@ -140,7 +144,7 @@ Testing should be ongoing throughout development.
 
 ## Immediate Next Steps
 
-1. [ ] Update argument parsing to remove format requirements
+1. [x] Update argument parsing to remove format requirements
 2. [ ] Implement relative path calculations for symlinks
 3. [ ] Create sequential numbering system
 4. [ ] Build symlink creation functionality

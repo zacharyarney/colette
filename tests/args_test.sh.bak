@@ -1,0 +1,115 @@
+#!/bin/bash
+
+# Test counter initialization
+TESTS_RUN=0
+TESTS_PASSED=0
+TESTS_FAILED=0
+
+# Test helper function
+test_colette() {
+    local cmd="$1"
+    local expected_status="$2"
+    local expected_output="$3"
+    local test_name="$4"
+    
+    TESTS_RUN=$((TESTS_RUN + 1))
+    echo -e "\n${YELLOW}Test $TESTS_RUN: $test_name${NC}"
+    echo "Command: $cmd"
+    
+    # Run command and capture output and status
+    output=$($cmd 2>&1)
+    status=$?
+    
+    # Check exit status
+    if [ $status -eq $expected_status ]; then
+        echo -e "${GREEN}✓ Exit status correct ($status)${NC}"
+        status_passed=true
+    else
+        echo -e "${RED}✗ Expected status $expected_status, got $status${NC}"
+        status_passed=false
+    fi
+    
+    # Check output contains expected string
+    if [[ "$output" == *"$expected_output"* ]]; then
+        echo -e "${GREEN}✓ Output matches expected${NC}"
+        output_passed=true
+    else
+        echo -e "${RED}✗ Expected output containing:${NC}"
+        echo -e "${RED}'$expected_output'${NC}"
+        echo -e "${RED}Got:${NC}"
+        echo -e "${RED}'$output'${NC}"
+        output_passed=false
+    fi
+    
+    # Update test counts
+    if [ "$status_passed" = true ] && [ "$output_passed" = true ]; then
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+}
+
+# Create test project structure
+setup_test_project() {
+    # Create a basic project structure for testing
+    mkdir -p "$TEST_DATA/test_project/chapter1"
+    mkdir -p "$TEST_DATA/test_project/chapter2"
+    touch "$TEST_DATA/test_project/.index"
+    touch "$TEST_DATA/test_project/chapter1/.index"
+    touch "$TEST_DATA/test_project/chapter2/.index"
+    chmod 755 "$TEST_DATA/test_project"
+}
+
+# Basic usage tests
+setup_test_project
+
+# Test 1: Basic invocation - just a directory
+test_colette "$COLETTE $TEST_DATA/test_project" 0 "Success" \
+    "Basic directory path test"
+
+# Test 2: Initialize project
+test_colette "$COLETTE --init $TEST_DATA/test_project" 0 "Success" \
+    "Project initialization"
+
+# Test 3: Check project structure
+test_colette "$COLETTE --check $TEST_DATA/test_project" 0 "Success" \
+    "Project structure check"
+
+# Test 4: Create symlink list with custom title
+test_colette "$COLETTE --as-list --title draft1 $TEST_DATA/test_project" 0 "Success" \
+    "Symlink list creation with custom title"
+
+# Test 5: Custom prefix padding
+test_colette "$COLETTE --prefix 5 $TEST_DATA/test_project" 0 "Success" \
+    "Custom prefix padding"
+
+# Error case tests
+# Test 6: Missing directory
+test_colette "$COLETTE" 1 "No directory specified" \
+    "Missing directory argument"
+
+# Test 7: Invalid directory
+test_colette "$COLETTE $TEST_DATA/nonexistent" 1 "Invalid directory path" \
+    "Invalid directory path"
+
+# Test 8: Invalid prefix padding
+test_colette "$COLETTE --prefix 0 $TEST_DATA/test_project" 1 "Prefix padding must be a value from 1 to 10" \
+    "Invalid prefix padding - zero"
+
+test_colette "$COLETTE --prefix abc $TEST_DATA/test_project" 1 "Invalid prefix padding value" \
+    "Invalid prefix padding - non-numeric"
+
+# Test 9: Conflicting modes
+test_colette "$COLETTE --init --check $TEST_DATA/test_project" 1 "Conflicting options" \
+    "Conflicting mode flags"
+
+# Test 10: Invalid flag
+test_colette "$COLETTE -x $TEST_DATA/test_project" 1 "Invalid option" \
+    "Invalid option flag"
+
+# Clean up test files
+cleanup_test_project() {
+    rm -rf "$TEST_DATA/test_project"
+}
+
+cleanup_test_project
