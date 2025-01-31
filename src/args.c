@@ -8,6 +8,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+static const char *USAGE_STRING =
+    "Usage: colette [OPTIONS] DIRECTORY\n"
+    "\n"
+    "Options:\n"
+    "  -i, --init             Initialize project structure\n"
+    "  -c, --check            Check project structure\n"
+    "  -l, --as-list          Create ordered list of symlinks\n"
+    "  -t, --title TITLE      Set output file title (default: draft)\n"
+    "  -p, --prefix NUMBER    Set prefix padding (default: 3)\n"
+    "\n"
+    "For more information, see https://github.com/zacharyarney/colette\n";
+
 static struct option longOpts[] = {
     {"init", no_argument, NULL, 'i'},
     {"check", no_argument, NULL, 'c'},
@@ -76,14 +88,14 @@ static char *validateDirectory(char *directoryArg, enum ArgError *status) {
     return resolvedPath;
 }
 
-static void validateModes(struct Arguments *args, enum ArgError *status) {
-    if (args->initMode) {
-        if (args->checkMode || args->outputDirMode) {
-            *status = ARG_CONFLICTING_FLAGS;
-        }
-    } else if (args->checkMode && args->outputDirMode) {
+static enum ProcessMode validateModes(struct Arguments *args,
+                                      enum ProcessMode modeArg,
+                                      enum ArgError *status) {
+    if (args->mode != MODE_COLLATE && args->mode != modeArg) {
         *status = ARG_CONFLICTING_FLAGS;
     }
+
+    return modeArg;
 }
 
 static unsigned int validatePadding(char *paddingArg, enum ArgError *status) {
@@ -141,46 +153,57 @@ static char *validateTitle(char *titleArg, enum ArgError *status) {
     return titleBuf;
 }
 
-enum ArgError parseArgs(int argc, char **argv, struct Arguments *args) {
+struct Arguments parseArgs(int argc, char **argv) {
+    struct Arguments args = {.directory = NULL,
+                             .initMode = false,
+                             .mode = MODE_COLLATE,
+                             .prefixPadding = 3,
+                             .status = ARG_SUCCESS};
+
     int opt;
     char *shortOpts = "cilt:p:";
-    enum ArgError status = ARG_SUCCESS;
 
     while ((opt = getopt_long(argc, argv, shortOpts, longOpts, NULL)) != -1) {
         switch (opt) {
         case 'i':
-            args->initMode = true;
+            args.initMode = true;
             break;
         case 'c':
-            args->checkMode = true;
+            args.mode = validateModes(&args, MODE_CHECK, &args.status);
             break;
-        case 'o':
-            args->outputDirMode = true;
+        case 'l':
+            args.mode = validateModes(&args, MODE_LIST, &args.status);
             break;
         case 't':
-            args->title = validateTitle(optarg, &status);
+            args.title = validateTitle(optarg, &args.status);
             break;
         case 'p':
-            args->prefixPadding = validatePadding(optarg, &status);
-            if (status != ARG_SUCCESS) {
-                return status;
-            }
+            args.prefixPadding = validatePadding(optarg, &args.status);
             break;
         case '?':
-            return ARG_INVALID_OPT;
+            args.status = ARG_INVALID_OPT;
+            break;
         }
     }
 
     // Set default title if not supplied by user
-    if (!args->title) {
-        args->title = "_draft_";
+    if (!args.title) {
+        char *defaultTitle = "_draft_";
+        size_t defaultTitleLen = strlen(defaultTitle) + 1;
+        args.title = malloc(defaultTitleLen);
+        if (args.title) {
+            memcpy(args.title, defaultTitle, defaultTitleLen);
+        }
     }
     // After optional args are parsed, optint points to first non-optional arg.
     // This allows us to set args->directory to DIRECTORY.
-    args->directory = validateDirectory(argv[optind], &status);
-    validateModes(args, &status);
+    args.directory = validateDirectory(argv[optind], &args.status);
+    if (args.status != ARG_SUCCESS) {
+        fprintf(stderr, "%s\n", argErrorToString(args.status));
+        fprintf(stderr, "%s\n", getUsageString());
+    }
 
-    return status;
+    return args;
 }
 
 const char *argErrorToString(enum ArgError error) {
@@ -209,13 +232,23 @@ const char *argErrorToString(enum ArgError error) {
         return "Error: Invalid option";
     case ARG_MEMORY_ERROR:
         return "Error: Memory allocation failed";
+    case ARG_USAGE_MSG:
+        return "Usage: colette [-i|--init] [-c|--check] [-a|--as-list] "
+               "[-p|--prefix] PREFIX_PADDING DIRECTORY";
     default:
         return "Unknown error";
     }
 }
 
+const char *getUsageString(void) {
+    return USAGE_STRING;
+}
+
 void freeArguments(struct Arguments *args) {
     if (args->directory != NULL) {
         free(args->directory);
+    }
+    if (args->title != NULL) {
+        free(args->title);
     }
 }

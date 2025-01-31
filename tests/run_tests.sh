@@ -26,7 +26,7 @@ setup_test_env() {
 
 # Clean up test environment
 cleanup_test_env() {
-    echo -e "${YELLOW}Cleaning up test environment...${NC}"
+    echo -e "\n${YELLOW}Cleaning up test environment...${NC}"
     rm -rf "$TEST_DATA"
 }
 
@@ -76,5 +76,5 @@ print_final_summary() {
 # Main execution
 setup_test_env
 run_all_tests
-print_final_summary
 cleanup_test_env
+print_final_summary

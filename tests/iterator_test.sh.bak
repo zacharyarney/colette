@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# Initialize test counters (required by run_tests.sh)
+TESTS_RUN=0
+TESTS_PASSED=0
+TESTS_FAILED=0
+
+# Test project setup function
+setup_basic_project() {
+    local project_dir="$TEST_DATA/basic_project"
+    
+    # Create main project directory and root index
+    mkdir -p "$project_dir"
+    echo "chapter1.md" > "$project_dir/.index"
+    echo "chapter2" >> "$project_dir/.index"
+    
+    # Create first chapter file
+    echo "Chapter 1 content" > "$project_dir/chapter1.md"
+    
+    # Create chapter2 directory with nested content
+    mkdir -p "$project_dir/chapter2"
+    echo "scene1.md" > "$project_dir/chapter2/.index"
+    echo "scene2.md" >> "$project_dir/chapter2/.index"
+    echo "Scene 1 content" > "$project_dir/chapter2/scene1.md"
+    echo "Scene 2 content" > "$project_dir/chapter2/scene2.md"
+}
+
+setup_complex_project() {
+    local project_dir="$TEST_DATA/complex_project"
+    
+    # Create main project structure
+    mkdir -p "$project_dir"
+    echo "# Main index file" > "$project_dir/.index"
+    echo "introduction.md" >> "$project_dir/.index"
+    echo "" >> "$project_dir/.index"  # Empty line to test
+    echo "part1" >> "$project_dir/.index"
+    echo "_notes" >> "$project_dir/.index"  # Should be ignored
+    
+    # Create introduction
+    echo "Introduction content" > "$project_dir/introduction.md"
+    
+    # Create part1 with nested structure
+    mkdir -p "$project_dir/part1"
+    echo "chapter1" > "$project_dir/part1/.index"
+    echo "chapter2.md" >> "$project_dir/part1/.index"
+    
+    mkdir -p "$project_dir/part1/chapter1"
+    echo "scene1.md" > "$project_dir/part1/chapter1/.index"
+    echo "scene2.md" >> "$project_dir/part1/chapter1/.index"
+    echo "_draft.md" >> "$project_dir/part1/chapter1/.index"  # Should be ignored
+    
+    # Create content files
+    echo "Part 1 Chapter 2" > "$project_dir/part1/chapter2.md"
+    echo "Scene 1" > "$project_dir/part1/chapter1/scene1.md"
+    echo "Scene 2" > "$project_dir/part1/chapter1/scene2.md"
+    echo "Draft" > "$project_dir/part1/chapter1/_draft.md"
+    
+    # Create _notes directory that should be ignored
+    mkdir -p "$project_dir/_notes"
+    echo "notes.md" > "$project_dir/_notes/.index"
+    echo "Notes content" > "$project_dir/_notes/notes.md"
+}
+
+# Test helper function
+test_iteration() {
+    local dir="$1"
+    local expected_files="$2"
+    local test_name="$3"
+    
+    TESTS_RUN=$((TESTS_RUN + 1))
+    echo -e "\n${YELLOW}Test $TESTS_RUN: $test_name${NC}"
+    
+    # Run colette with the test directory
+    output=$($COLETTE "$dir" 2>&1)
+    status=$?
+    
+    # Check if the correct files were processed in order
+    if [ "$status" -eq 0 ] && [ "$output" = "$expected_files" ]; then
+        echo -e "${GREEN}✓ Files processed in correct order${NC}"
+        TESTS_PASSED=$((TESTS_PASSED + 1))
+    else
+        echo -e "${RED}✗ Incorrect file processing${NC}"
+        echo -e "${RED}Expected:${NC}\n$expected_files"
+        echo -e "${RED}Got:${NC}\n$output"
+        TESTS_FAILED=$((TESTS_FAILED + 1))
+    fi
+}
+
+# Set up test environment
+setup_basic_project
+setup_complex_project
+
+# Test basic project iteration
+test_iteration "$TEST_DATA/basic_project" \
+    "chapter1.md
+chapter2/scene1.md
+chapter2/scene2.md" \
+    "Basic project iteration"
+
+# Test complex project with ignored files
+test_iteration "$TEST_DATA/complex_project" \
+    "introduction.md
+part1/chapter1/scene1.md
+part1/chapter1/scene2.md
+part1/chapter2.md" \
+    "Complex project with ignored files"
+
+# Test error cases
+test_iteration "$TEST_DATA/nonexistent" "" \
+    "Non-existent directory"
+
+test_iteration "$TEST_DATA/complex_project/_notes" "" \
+    "Ignored directory"

@@ -1,4 +1,5 @@
 -Wall
+-Werror
 -Wextra
 -std=c11
 -pedantic
