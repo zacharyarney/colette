@@ -3,7 +3,6 @@
 # Get absolute paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-# export LSAN_OPTIONS="detect_leaks=1:verbosity=2:report_objects=1:max_leaks=0"
 export TEST_DATA="$SCRIPT_DIR/testdata"
 export COLETTE="$PROJECT_ROOT/bin/colette"
 

@@ -33,15 +33,6 @@ bool isIncluded(const char *fileName) {
     if (fileName == NULL || fileName[0] == '\0') {
         return false;
     }
-    /**
-     * Hidden files are denoted with a '.' or '_' prefix. User-created files
-     * are prefixed with '_' to be ignored. For example: `_notes.md` could be
-     * a file used to keep notes not intended to be included in the document.
-     * Dot-prefixed files are normal POSIX hidden files and include `.index`
-     * files to be used to organize the document. Finally, output file names
-     * will be surrounded by underscores i.e. `_Title_.md` to both filter them
-     * from collation and visually differentiate them from other project files.
-     **/
     return (fileName[0] != '.' && fileName[0] != '_');
 }
 

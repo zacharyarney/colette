@@ -68,14 +68,15 @@ struct ProjectState {
  * index files, processing project files in the order they appear in
  * the index files.
  *
- * @param args  Command line arguments included when the program is executed.
+ * @param   args  Command line arguments included when the program is executed.
  *
- * @return 0 if process completes without and errors.
- *         -1 if any error occurs during the process including:
- *             - state intitialization
- *             - index file traversal
- *             - project file traversal/processing
- *             - output writing
+ * @return  int
+ *          0     if process completes without and errors.
+ *         -1     if any error occurs during the process including:
+ *                    - state intitialization
+ *                    - index file traversal
+ *                    - project file traversal/processing
+ *                    - output writing
  * */
 int processProject(struct Arguments *args);
 
