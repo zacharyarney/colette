@@ -71,8 +71,7 @@ resolveFile(char *buffer, size_t buffSize, const char *path) {
 
     const char **extensions = getSupportedExtensions();
     while (*extensions != NULL) {
-        if (joinExtension(buffer, buffSize, path, *extensions) !=
-            PATH_SUCCESS) {
+        if (joinExtension(buffer, buffSize, path, *extensions) != 0) {
             return RESOLVE_ERROR;
         }
 
@@ -91,9 +90,8 @@ resolveFile(char *buffer, size_t buffSize, const char *path) {
 
     return RESOLVE_NOT_FOUND;
 }
-
-int getBasename(const char *path, char *buffer, size_t size) {
-    if (!path || !buffer || size == 0) {
+int getBasename(char *buffer, const char *path, size_t size) {
+    if (!buffer || !path || size == 0) {
         return -1;
     }
 
@@ -122,19 +120,18 @@ int handlePathBufTrailingSlashPad(const char *path, size_t pathLen) {
     return hasTrailingSlash ? 1 : 2; // slash and null terminator
 }
 
-enum PathStatus
-joinPath(char *buffer, size_t buffSize, const char *dir, const char *file) {
+int joinPath(char *buffer, size_t buffSize, const char *dir, const char *file) {
     if (!dir || !file || !buffer) {
         reportFileError(PATH_OP_VALIDATE, "path joining");
-        return PATH_NULL_INPUT;
+        return -1;
     }
     if (buffSize > COLETTE_PATH_BUF_SIZE) {
         reportFileError(PATH_OP_BUFFER, dir);
-        return PATH_BUFFER_TOO_LARGE;
+        return -1;
     }
     if (dir[0] == '\0' || file[0] == '\0') {
         reportFileError(PATH_OP_VALIDATE, "path joining");
-        return PATH_EMPTY_INPUT;
+        return -1;
     }
 
     size_t dirLen = strnlen(dir, buffSize);
@@ -142,24 +139,23 @@ joinPath(char *buffer, size_t buffSize, const char *dir, const char *file) {
     if (dirLen >= buffSize || fileLen >= buffSize) {
         // strnlen did not encounter null terminator
         reportFileError(PATH_OP_VALIDATE, "path joining");
-        return PATH_TOO_LONG;
+        return -1;
     }
 
     if (file[0] == '/') {
-        fprintf(stderr, "DEBUG -- file starts with a slash (absolute)");
         reportFileError(PATH_OP_ABS_FILE, file);
-        return PATH_ABS_NOT_ALLOWED;
+        return -1;
     }
     if (fileLen > COLETTE_NAME_BUF_SIZE) {
         reportFileError(PATH_OP_COMPONENT, file);
-        return PATH_NAME_TOO_LONG;
+        return -1;
     }
 
     int extraChars = handlePathBufTrailingSlashPad(dir, dirLen);
 
     if (dirLen + fileLen + extraChars > COLETTE_MAX_PATH_LEN) {
         reportFileError(PATH_OP_JOIN, "path joining");
-        return PATH_TOO_LONG;
+        return -1;
     }
 
     memcpy(buffer, dir, dirLen);
@@ -172,45 +168,68 @@ joinPath(char *buffer, size_t buffSize, const char *dir, const char *file) {
     memcpy(buffer + dirLen, file, fileLen);
     buffer[dirLen + fileLen] = '\0';
 
-    return PATH_SUCCESS;
+    return 0;
 }
 
-enum PathStatus joinExtension(char *buffer,
-                              size_t buffSize,
-                              const char *file,
-                              const char *ext) {
+int joinExtension(char *buffer,
+                  size_t buffSize,
+                  const char *file,
+                  const char *ext) {
     if (!file || !ext || !buffer) {
-        reportFileError(FILE_OP_ACCESS, "extension joining");
-        return PATH_NULL_INPUT;
+        errno = 0; // ideally we shouldn't be relying on errno for reporting
+        reportFileError(FILE_OP_JOIN, "extension joining");
+        return -1;
     }
     if (buffSize > COLETTE_PATH_BUF_SIZE) {
         reportFileError(FILE_OP_ACCESS, file);
-        return PATH_BUFFER_TOO_LARGE;
+        return -1;
     }
     if (file[0] == '\0' || ext[0] == '\0') {
         reportFileError(FILE_OP_ACCESS, "extension joining");
-        return PATH_EMPTY_INPUT;
+        return -1;
     }
     if (ext[0] != '.') {
         reportFileError(FILE_OP_ACCESS, "extension joining");
-        return PATH_INVALID_EXT;
+        return -1;
     }
 
     size_t fileLen = strnlen(file, buffSize);
-    size_t extLen = strnlen(ext, COLETTE_NAME_BUF_SIZE) + 1;
-    if (extLen >= COLETTE_NAME_BUF_SIZE || fileLen >= buffSize) {
+    size_t extLen = strnlen(ext, COLETTE_EXT_BUF_SIZE);
+    if (extLen >= COLETTE_EXT_BUF_SIZE || fileLen >= buffSize) {
         // strnlen did not encounter null terminator
-        reportFileError(FILE_OP_ACCESS, "extension joining");
-        return PATH_TOO_LONG;
+        reportFileError(FILE_OP_JOIN, "extension joining");
+        return -1;
+    }
+    if (fileLen + extLen > buffSize) {
+        reportFileError(FILE_OP_JOIN, "extension joining");
+        return -1;
     }
 
-    if (fileLen + extLen > COLETTE_MAX_PATH_LEN) {
-        reportFileError(FILE_OP_ACCESS, "extension joining");
-        return PATH_TOO_LONG;
+    if (fileLen + extLen + 1 > COLETTE_MAX_PATH_LEN) {
+        reportFileError(FILE_OP_JOIN, "extension joining");
+        return -1;
+    }
+
+    char baseName[COLETTE_NAME_BUF_SIZE];
+    if (getBasename(baseName, file, COLETTE_NAME_BUF_SIZE) != 0) {
+        reportFileError(FILE_OP_JOIN, "extension joining");
+        return -1;
+    }
+    size_t baseNameLen = strlen(baseName) + 1;
+    if (baseNameLen + extLen > COLETTE_NAME_BUF_SIZE) {
+        /* *
+         * TODO: Improve file error reporting to make it more like process error
+         * reporting. Using errno for error messages is largely unhelpful to the
+         * end user in cases like this where the filename is too long. This is
+         * an error generated by colette, not a system error.
+         * */
+        reportFileError(FILE_OP_JOIN, "extension joining");
+        return -1;
     }
 
     memcpy(buffer, file, fileLen);
     memcpy(buffer + fileLen, ext, extLen); // copy ext at end of file in buffer
+    buffer[fileLen + extLen] = '\0';
 
-    return PATH_SUCCESS;
+    return 0;
 }

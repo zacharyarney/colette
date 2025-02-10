@@ -9,10 +9,11 @@
 bool isIncluded(const char *fileName);
 // int getFileStatus(struct stat *statBuf, const char *path);
 enum ResolveStatus resolveFile(char *buffer, size_t buffSize, const char *path);
-int getBasename(const char *path, char *buffer, size_t size);
+int getBasename(char *buffer, const char *path, size_t size);
 int handlePathBufTrailingSlashPad(const char *path, size_t pathLen);
-enum PathStatus
-joinPath(char *buffer, size_t buffSize, const char *dir, const char *file);
-enum PathStatus
-joinExtension(char *buffer, size_t buffSize, const char *file, const char *ext);
+int joinPath(char *buffer, size_t buffSize, const char *dir, const char *file);
+int joinExtension(char *buffer,
+                  size_t buffSize,
+                  const char *file,
+                  const char *ext);
 #endif /* FILES_H */

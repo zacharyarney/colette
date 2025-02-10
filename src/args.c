@@ -38,8 +38,8 @@ static bool isValidFilenameChar(char c) {
     return true;
 }
 
-static unsigned int stringToUint(const char *str, char **endptr,
-                                 bool *success) {
+static unsigned int
+stringToUint(const char *str, char **endptr, bool *success) {
     if (!str || !success) {
         if (success) {
             *success = false;
@@ -76,7 +76,9 @@ static char *validateDirectory(char *directoryArg, enum ArgError *status) {
             *status = ARG_INVALID_DIR;
             break;
         default:
-            fprintf(stderr, "Error resolving path %s: %s\n", directory,
+            fprintf(stderr,
+                    "Error resolving path %s: %s\n",
+                    directory,
                     strerror(errno));
             *status = ARG_INVALID_DIR;
         }
@@ -142,6 +144,7 @@ static char *validateTitle(char *titleArg, enum ArgError *status) {
     for (size_t i = 1; i < outLen - 1; i++) {
         if (!isValidFilenameChar(titleBuf[i])) {
             *status = ARG_INVALID_TITLE;
+            free(titleBuf);
             return NULL;
         }
         if (isspace(titleBuf[i])) {
@@ -245,10 +248,6 @@ const char *getUsageString(void) {
 }
 
 void freeArguments(struct Arguments *args) {
-    if (args->directory != NULL) {
-        free(args->directory);
-    }
-    if (args->title != NULL) {
-        free(args->title);
-    }
+    free(args->directory);
+    free(args->title);
 }
