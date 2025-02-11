@@ -8,6 +8,16 @@ TESTS_FAILED=0
 # Lorem ipsum text for longer files
 LOREM="Lorem ipsum odor amet, consectetuer adipiscing elit. Lectus viverra habitant vulputate; suspendisse dolor nulla. Potenti ullamcorper etiam faucibus blandit at. Maximus venenatis ultrices proin integer sapien magna. Dictumst dolor pulvinar commodo consequat integer posuere. Commodo cursus justo ullamcorper sagittis varius vel ut. Himenaeos porta facilisi montes iaculis aliquam augue placerat lobortis. Fermentum elementum in maecenas pulvinar facilisis leo orci. Ante rhoncus congue mi nibh himenaeos torquent." 
 
+get_file_size() {
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # MacOS
+        stat -f %z "$1"
+    else
+        # Linux and others
+        stat --format="%s" "$1"
+    fi
+}
+
 # Test helper function for collate mode
 test_collate() {
     local project_dir="$1"
@@ -72,10 +82,10 @@ test_collate_length() {
     
     if [ $status -eq 0 ]; then
         # Get the actual size of output file
-        local actual_size=$(stat -f %z "$project_dir/_draft_.md")
+        local actual_size=$(get_file_size "$project_dir/_draft_.md")
         # Get sizes of input files
-        local large_size=$(stat -f %z "$project_dir/large_file.md")
-        local small_size=$(stat -f %z "$project_dir/small_file.md")
+        local large_size=$(get_file_size "$project_dir/large_file.md")
+        local small_size=$(get_file_size "$project_dir/small_file.md")
         
         # Add 2 for the newline after each file
         local expected_size=$((large_size + small_size + 2))

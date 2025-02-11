@@ -16,7 +16,7 @@ endif
 
 # Compiler flags
 WARNING_FLAGS = -Wall -Werror -Wextra
-STD_FLAGS = -std=c11 -pedantic
+STD_FLAGS = -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
 INCLUDE_FLAGS = -I./src
 CFLAGS = $(WARNING_FLAGS) $(STD_FLAGS) $(INCLUDE_FLAGS)
 

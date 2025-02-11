@@ -1,0 +1,70 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allows manual trigger
+
+jobs:
+  test:
+    name: Run Test Suite
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang llvm make
+    
+    - name: Build Debug Version
+      run: make debug
+    
+    - name: Run Tests
+      run: |
+        export ASAN_OPTIONS="halt_on_error=1:print_stats=1:verbosity=2:detect_stack_use_after_return=1:detect_leaks=1:detect_invalid_pointer_pairs=2:strict_string_checks=1"
+        export LSAN_OPTIONS="detect_leaks=1:verbosity=2:report_objects=1:max_leaks=0:print_suppressions=1"
+        ./tests/run_tests.sh
+    
+    - name: Upload Test Logs
+      if: always()  # Run even if tests fail
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-logs
+        path: |
+          asan.log*
+          tests/testdata/**/*
+        retention-days: 14
+
+  memcheck:
+    name: Memory Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y clang llvm make
+    
+    - name: Build with Memory Checks
+      run: make memcheck
+    
+    - name: Run Memory Tests
+      run: |
+        export ASAN_OPTIONS="detect_leaks=1:print_stats=1:halt_on_error=0:exitcode=0"
+        export LSAN_OPTIONS="detect_leaks=1:print_suppressions=0:max_leaks=0"
+        ./tests/run_memcheck.sh
+    
+    - name: Upload Memory Check Logs
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: memcheck-logs
+        path: asan.log*
+        retention-days: 14
+

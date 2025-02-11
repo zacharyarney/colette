@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 static const char *USAGE_STRING =
     "Usage: colette [OPTIONS] DIRECTORY\n"
