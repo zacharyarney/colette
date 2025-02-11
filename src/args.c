@@ -27,8 +27,46 @@ static struct option longOpts[] = {
     {"title", required_argument, NULL, 't'},
     {"prefix", required_argument, NULL, 'p'},
     // {"output", required_argument, NULL, 'o'},
-    {0, 0, 0, 0} // array terminator
+    {0, 0, 0, 0}  // array terminator
 };
+
+static const char *argErrorToString(enum ArgError error) {
+    switch (error) {
+    case ARG_SUCCESS:
+        return "Success";
+    case ARG_MISSING_DIR:
+        return "Error: No directory specified";
+    case ARG_INVALID_DIR:
+        return "Error: Invalid directory path";
+    case ARG_MISSING_PADDING:
+        return "Error: Prefix padding value required";
+    case ARG_INVALID_PADDING:
+        return "Error: Invalid prefix padding value";
+    case ARG_PADDING_RANGE:
+        return "Error: Prefix padding must be a value from 1 to 10";
+    case ARG_MISSING_TITLE:
+        return "Error: Title value required";
+    case ARG_INVALID_TITLE:
+        return "Error: Invalid title";
+    case ARG_NO_DIR_ACCESS:
+        return "Error: Cannot access directory";
+    case ARG_CONFLICTING_FLAGS:
+        return "Error: Conflicting options specified";
+    case ARG_INVALID_OPT:
+        return "Error: Invalid option";
+    case ARG_MEMORY_ERROR:
+        return "Error: Memory allocation failed";
+    case ARG_USAGE_MSG:
+        return "Usage: colette [-i|--init] [-c|--check] [-a|--as-list] "
+               "[-p|--prefix] PREFIX_PADDING DIRECTORY";
+    default:
+        return "Unknown error";
+    }
+}
+
+static const char *getUsageString(void) {
+    return USAGE_STRING;
+}
 
 static bool isValidFilenameChar(char c) {
     if (c == '/' || c == '\0' || iscntrl(c)) {
@@ -38,8 +76,8 @@ static bool isValidFilenameChar(char c) {
     return true;
 }
 
-static unsigned int stringToUint(const char *str, char **endptr,
-                                 bool *success) {
+static unsigned int
+stringToUint(const char *str, char **endptr, bool *success) {
     if (!str || !success) {
         if (success) {
             *success = false;
@@ -63,8 +101,10 @@ static char *validateDirectory(char *directoryArg, enum ArgError *status) {
     char *resolvedPath;
     char *directory = directoryArg ? directoryArg : ".";
 
-    // null pointer in resolved_name arg mallocs buffer for return value
-    // rememeber to free()!
+    /* *
+    * null pointer in resolved_name arg mallocs buffer for return value
+    * rememeber to free()!
+    * */
     resolvedPath = realpath(directory, NULL);
     if (resolvedPath == NULL) {
         *status = ARG_INVALID_DIR;
@@ -76,7 +116,9 @@ static char *validateDirectory(char *directoryArg, enum ArgError *status) {
             *status = ARG_INVALID_DIR;
             break;
         default:
-            fprintf(stderr, "Error resolving path %s: %s\n", directory,
+            fprintf(stderr,
+                    "Error resolving path %s: %s\n",
+                    directory,
                     strerror(errno));
             *status = ARG_INVALID_DIR;
         }
@@ -120,7 +162,7 @@ static char *validateTitle(char *titleArg, enum ArgError *status) {
     }
 
     size_t titleLen = strlen(titleArg);
-    size_t outLen = titleLen + 3; // title + underscores + null terminator
+    size_t outLen = titleLen + 3;  // title + underscores + null terminator
 
     if (outLen > COLETTE_NAME_BUF_SIZE) {
         *status = ARG_INVALID_TITLE;
@@ -142,6 +184,7 @@ static char *validateTitle(char *titleArg, enum ArgError *status) {
     for (size_t i = 1; i < outLen - 1; i++) {
         if (!isValidFilenameChar(titleBuf[i])) {
             *status = ARG_INVALID_TITLE;
+            free(titleBuf);
             return NULL;
         }
         if (isspace(titleBuf[i])) {
@@ -206,49 +249,7 @@ struct Arguments parseArgs(int argc, char **argv) {
     return args;
 }
 
-const char *argErrorToString(enum ArgError error) {
-    switch (error) {
-    case ARG_SUCCESS:
-        return "Success";
-    case ARG_MISSING_DIR:
-        return "Error: No directory specified";
-    case ARG_INVALID_DIR:
-        return "Error: Invalid directory path";
-    case ARG_MISSING_PADDING:
-        return "Error: Prefix padding value required";
-    case ARG_INVALID_PADDING:
-        return "Error: Invalid prefix padding value";
-    case ARG_PADDING_RANGE:
-        return "Error: Prefix padding must be a value from 1 to 10";
-    case ARG_MISSING_TITLE:
-        return "Error: Title value required";
-    case ARG_INVALID_TITLE:
-        return "Error: Invalid title";
-    case ARG_NO_DIR_ACCESS:
-        return "Error: Cannot access directory";
-    case ARG_CONFLICTING_FLAGS:
-        return "Error: Conflicting options specified";
-    case ARG_INVALID_OPT:
-        return "Error: Invalid option";
-    case ARG_MEMORY_ERROR:
-        return "Error: Memory allocation failed";
-    case ARG_USAGE_MSG:
-        return "Usage: colette [-i|--init] [-c|--check] [-a|--as-list] "
-               "[-p|--prefix] PREFIX_PADDING DIRECTORY";
-    default:
-        return "Unknown error";
-    }
-}
-
-const char *getUsageString(void) {
-    return USAGE_STRING;
-}
-
 void freeArguments(struct Arguments *args) {
-    if (args->directory != NULL) {
-        free(args->directory);
-    }
-    if (args->title != NULL) {
-        free(args->title);
-    }
+    free(args->directory);
+    free(args->title);
 }

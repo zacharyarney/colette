@@ -6,6 +6,7 @@
 int main(int argc, char *argv[]) {
     struct Arguments args = parseArgs(argc, argv);
     if (args.status != ARG_SUCCESS) {
+        freeArguments(&args);
         return EXIT_FAILURE;
     }
 

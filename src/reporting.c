@@ -16,6 +16,8 @@ static const char *fileOpStr(enum FileOperation op) {
         return "reading";
     case FILE_OP_WRITE:
         return "writing";
+    case FILE_OP_JOIN:
+        return "joining";
     case PATH_OP_VALIDATE:
         return "validating path inputs";
     case PATH_OP_COMPONENT:

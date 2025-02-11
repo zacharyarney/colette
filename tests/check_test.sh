@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# ASAN
+# ASAN_OPTIONS="detect_leaks=1"
+# export ASAN_OPTIONS
+
 # Test counter initialization
 TESTS_RUN=0
 TESTS_PASSED=0
@@ -18,7 +22,6 @@ test_check_mode() {
     # Run colette in check mode and capture both output and status
     output=$($COLETTE --check "$project_dir" 2>&1)
     status=$?
-    
     # Verify the exit status matches what we expect
     if [ $status -eq $expected_status ]; then
         echo -e "${GREEN}✓ Exit status correct ($status)${NC}"
@@ -114,6 +117,13 @@ setup_filesystem_edge_cases() {
     echo "$long_name" > "$base_dir/long_names/.index"
     touch "$base_dir/long_names/$long_name"
     
+    # === Too long names test setup ===
+    mkdir -p "$base_dir/too_long_names"
+    # Create a filename that is over 255 characters
+    local too_long_name=$(printf 'a%.0s' {1..254})".md"
+    echo "$too_long_name" > "$base_dir/too_long_names/.index"
+    # touch "$base_dir/too_long_names/$too_long_name"
+
     # === Permission test setup ===
     mkdir -p "$base_dir/permissions/readonly_dir"
     mkdir -p "$base_dir/permissions/noexec_dir"
@@ -287,6 +297,10 @@ test_check_mode "$TEST_DATA/edge_cases/special_names" 0 "Success" \
 # Test long name handling
 test_check_mode "$TEST_DATA/edge_cases/long_names" 0 "Success" \
     "Project with maximum length filenames"
+
+# Test too long name handling
+test_check_mode "$TEST_DATA/edge_cases/too_long_names" 1 "Error joining extension joining" \
+    "Project with filenames exceeding maximum length"
 
 # Test permission handling
 test_check_mode "$TEST_DATA/edge_cases/permissions/readonly_dir" 0 "Success" \

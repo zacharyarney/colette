@@ -7,25 +7,12 @@ enum FileOperation {
     FILE_OP_OPEN,      // Opening files (will need this for index files)
     FILE_OP_READ,      // Reading from files (will need this for collation)
     FILE_OP_WRITE,     // Writing to files (will need this for output)
+    FILE_OP_JOIN,
     PATH_OP_VALIDATE,  // Input validation checks
     PATH_OP_COMPONENT, // Path component validation
     PATH_OP_ABS_FILE,
     PATH_OP_BUFFER,    // Buffer management
     PATH_OP_JOIN       // Path joining operation
-};
-
-enum PathStatus {
-    PATH_SUCCESS,
-    PATH_NULL_INPUT,
-    PATH_EMPTY_INPUT,
-    PATH_BUFFER_TOO_SMALL,
-    PATH_BUFFER_TOO_LARGE,
-    PATH_TOO_LONG,
-    PATH_NAME_TOO_LONG,
-    PATH_INVALID_CHAR,
-    PATH_ABS_NOT_ALLOWED,
-    PATH_MEMORY_ERROR,
-    PATH_INVALID_EXT,
 };
 
 enum ResolveStatus {
@@ -85,6 +72,7 @@ enum ProcessErrorDetail {
     PROC_ERR_INVALID_SEQUENCE, // Operations in wrong order
     PROC_ERR_INVALID_LINK,     // Symbolic links not allowed
     PROC_ERR_INVALID_PATH,
+    PROC_ERR_INVALID_OUTPUT,
     PROC_ERR_FILE_NOT_FOUND,
 
     // Permission errors
@@ -102,15 +90,6 @@ enum ProcessErrorDetail {
 
     // Other
     PROC_ERR_OPEN_FILE
-};
-
-enum IndexStateStatus {
-    INDEX_SUCCESS,
-    INDEX_FILE_ERROR,
-    INDEX_MEMORY_ERROR,
-    INDEX_OVERFLOW_ERROR,
-    INDEX_TOO_LARGE,
-    INDEX_PATH_TOO_LONG,
 };
 
 enum FileIteratorStatus {
