@@ -1,27 +1,37 @@
+# Allow overriding of compiler and installation paths
+CC ?= cc
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+
 # Detect operating system
 UNAME_S := $(shell uname -s)
 
-# Check for Homebrew LLVM on macOS, fallback to system clang
-ifeq ($(UNAME_S),Darwin)
-    HOMEBREW_LLVM := $(shell test -x /opt/homebrew/opt/llvm/bin/clang && echo "yes")
-    ifeq ($(HOMEBREW_LLVM),yes)
-        CC = /opt/homebrew/opt/llvm/bin/clang
-    else
-        CC = clang
-        $(warning On macOS, Homebrew LLVM is recommended for leak detection. Install with: brew install llvm)
-    endif
-else
-    CC = clang
+# Allow for overriding default C standard
+CSTD ?= c99
+
+# Enforce c99 as minimum standard
+ifeq ($(CSTD),c89)
+override CSTD = c99
+$(warning C89/C90 is not supported, using C99 instead)
 endif
 
-# Compiler flags
-WARNING_FLAGS = -Wall -Werror -Wextra
-STD_FLAGS = -std=c11 -pedantic -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
-INCLUDE_FLAGS = -I./src
-CFLAGS = $(WARNING_FLAGS) $(STD_FLAGS) $(INCLUDE_FLAGS)
+ifeq ($(CSTD),c90)
+override CSTD = c99
+$(warning C89/C90 is not supported, using C99 instead)
+endif
+
+# Compiler flags - allow overriding but provide defaults
+WARNING_FLAGS ?= -Wall -Werror -Wextra
+STD_FLAGS ?= -std=$(CSTD) -pedantic -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
+INCLUDE_FLAGS ?= -I./src
+CFLAGS ?= $(WARNING_FLAGS) $(STD_FLAGS) $(INCLUDE_FLAGS)
 
 # Linker flags
-LDFLAGS =
+LDFLAGS ?=
+
+# Sanitizer options
+ASAN_OPTIONS ?= detect_leaks=1:print_stats=1:halt_on_error=0:exitcode=0
+LSAN_OPTIONS ?= detect_leaks=1:print_suppressions=0:max_leaks=0
 
 # Directory structure
 SRC_DIR = src
@@ -41,37 +51,30 @@ EXECUTABLE = $(BIN_DIR)/colette
 all: release
 
 # Debug target
-debug: DEBUG = 1
 debug: CFLAGS += -DDBUG -g -O0
 debug: directories $(EXECUTABLE)
 
-# Memcheck flags based on compiler
-ifeq ($(HOMEBREW_LLVM),yes)
-    MEMCHECK_SANITIZE = -fsanitize=address,leak
-else
-    MEMCHECK_SANITIZE = -fsanitize=address
-endif
-
-# Memcheck target
+# Memcheck flags - should work with both gcc and clang
+SANITIZE_FLAGS = -fsanitize=address
 # Allows program to continue after finding issues
-MEMCHECK_SANITIZE += -fsanitize-recover=address,leak
+SANITIZE_FLAGS += -fsanitize-recover=address
 # Still halt on undefined behavior
-MEMCHECK_SANITIZE += -fno-sanitize-recover=undefined
+SANITIZE_FLAGS += -fno-sanitize-recover=undefined
 # Better stack traces
-MEMCHECK_SANITIZE += -fno-omit-frame-pointer
-MEMCHECK_SANITIZE += -fno-optimize-sibling-calls
-memcheck: DEBUG = 1
-memcheck: CFLAGS += $(MEMCHECK_SANITIZE) -DDBUG -g -O0 -fno-inline
-memcheck: LDFLAGS += $(MEMCHECK_SANITIZE)
+SANITIZE_FLAGS += -fno-omit-frame-pointer
+SANITIZE_FLAGS += -fno-optimize-sibling-calls
+
+# Memcheck target - should use llvm clang for full LSAN support
+memcheck: CFLAGS += $(SANITIZE_FLAGS) -DDBUG -g -O0 -fno-inline
+memcheck: LDFLAGS += $(SANITIZE_FLAGS)
 memcheck: directories $(EXECUTABLE)
-	$(SCRIPT_DIR)/run_memcheck.sh
+	ASAN_OPTIONS="$(ASAN_OPTIONS)" LSAN_OPTIONS="$(LSAN_OPTIONS)" $(SCRIPT_DIR)/run_memcheck.sh
 
 # Test target
 test: debug
 	$(SCRIPT_DIR)/run_tests.sh
 
 # Release target
-release: DEBUG = 0
 release: CFLAGS += -O2
 release: directories $(EXECUTABLE)
 
@@ -93,13 +96,14 @@ clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(BIN_DIR)
 
+# Install target that respects DESTDIR
+install: all
+	install -d $(DESTDIR)$(BINDIR)
+	install -m 755 $(EXECUTABLE) $(DESTDIR)$(BINDIR)/
+
+# Rebuild targets
 rebuild: clean all
 rebuild-debug: clean debug
 rebuild-memcheck: clean memcheck
 rebuild-test: clean test
 rebuild-release: clean release
-
-install: all
-	echo $(shell gcc --version | grep ^gcc | sed 's/^.* //g')
-	mkdir -p ~/bin
-	cp $(EXECUTABLE) ~/bin/
