@@ -3,9 +3,9 @@
 
 #include <stdbool.h>
 
-/**
+/* *
  * Possible error states when parsing command line arguments.
- */
+ * */
 enum ArgError {
     ARG_SUCCESS,              // Arguments parsed successfully
     ARG_MISSING_DIR,          // No directory argument provided
@@ -22,9 +22,9 @@ enum ArgError {
     ARG_USAGE_MSG,            // Show usage message
 };
 
-/**
+/* *
  * Operating modes that determine if and how files are processed.
- */
+ * */
 enum ProcessMode {
     MODE_COLLATE,
     MODE_LIST,

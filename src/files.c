@@ -29,10 +29,43 @@ static const char **getSupportedExtensions(void) {
 //     return count;
 // }
 
+bool isDir(const char *path) {
+    if (!path || path[0] == '\0') {
+        return false;
+    }
+
+    struct stat statBuf;
+    if (lstat(path, &statBuf) == 0) {
+        if (S_ISDIR(statBuf.st_mode)) {
+            return true;
+        }
+        return false;
+    }
+
+    return false;
+}
+
+bool isReg(const char *path) {
+    if (!path || path[0] == '\0') {
+        return false;
+    }
+
+    struct stat statBuf;
+    if (lstat(path, &statBuf) == 0) {
+        if (S_ISREG(statBuf.st_mode)) {
+            return true;
+        }
+        return false;
+    }
+
+    return false;
+}
+
 bool isIncluded(const char *fileName) {
     if (fileName == NULL || fileName[0] == '\0') {
         return false;
     }
+
     return (fileName[0] != '.' && fileName[0] != '_');
 }
 
@@ -81,6 +114,7 @@ resolveFile(char *buffer, size_t buffSize, const char *path) {
 
     return RESOLVE_NOT_FOUND;
 }
+
 int getBasename(char *buffer, const char *path, size_t size) {
     if (!buffer || !path || size == 0) {
         return -1;
