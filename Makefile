@@ -41,7 +41,7 @@ SCRIPT_DIR = tests
 
 # Find all source files
 SOURCES = $(wildcard $(SRC_DIR)/*.c)
-OBJECTS = $(SOURCES:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
+OBJECTS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SOURCES))
 EXECUTABLE = $(BIN_DIR)/colette
 
 # Build targets
