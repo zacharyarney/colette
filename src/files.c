@@ -65,6 +65,12 @@ bool isIncluded(const char *fileName) {
     if (fileName == NULL || fileName[0] == '\0') {
         return false;
     }
+    /* *
+     * TODO: Handle comments better ya dingus 
+     * */
+    if (fileName[0] == '#') {
+        return false;
+    }
 
     return (fileName[0] != '.' && fileName[0] != '_');
 }
