@@ -103,6 +103,13 @@ static FILE *openOrCreateIndexFile(const char *dirPath) {
     return indexFile;
 }
 
+static int isIncludedFilter(const struct dirent *entry) {
+    if (!entry) {
+        return 0;
+    }
+    return isIncluded(entry->d_name);
+}
+
 int enqueue(struct InitQueue **queue, const char *dirPath) {
     if (!queue) {
         return -1;
@@ -166,6 +173,7 @@ int dequeue(struct InitQueue **queue, char *outPath, size_t outPathLen) {
 
 int handleInit(char *rootDir) {
     if (!rootDir) {
+        reportProcessError(PROCESS_OP_HANDLE_INIT, "(root directory is NULL)", PROC_ERR_INVALID_PATH);
         return -1;
     }
 
@@ -173,6 +181,7 @@ int handleInit(char *rootDir) {
     struct InitQueue *queue = NULL;
 
     if (enqueue(&queue, rootDir) != 0) {
+                    reportProcessError(PROCESS_OP_HANDLE_INIT, rootDir, PROC_ERR_MEMORY_ALLOC);
         return -1;
     }
 
@@ -183,39 +192,48 @@ int handleInit(char *rootDir) {
             break;
         }
 
-        DIR *dir = opendir(curDir);
-        if (!dir) {
-            continue;
-        }
-
         FILE *indexFile = openOrCreateIndexFile(curDir);
         if (!indexFile) {
-            closedir(dir);
             reportProcessError(
                 PROCESS_OP_HANDLE_INIT, curDir, PROC_ERR_INDEX_MISSING);
             errorCount++;
-            continue; // should this continue or break?
+            continue;
         }
 
-        struct dirent *entry;
-        while ((entry = readdir(dir))) {
-            if (!isIncluded(entry->d_name)) {
+        struct dirent **nameList;
+        int entryCount =
+            scandir(curDir, &nameList, isIncludedFilter, alphasort);
+        if (entryCount < 0) {
+            reportProcessError(
+                PROCESS_OP_HANDLE_INIT, curDir, PROC_ERR_OPEN_FILE);
+            errorCount++;
+            fclose(indexFile);
+            continue;
+        }
+
+        for (int i = 0; i < entryCount; i++) {
+            const char *entry = nameList[i]->d_name;
+            char fullPath[COLETTE_PATH_BUF_SIZE];
+            if (joinPath(fullPath, sizeof(fullPath), curDir, entry)) {
+                errorCount++;
+                free(nameList[i]);
                 continue;
             }
 
-            char fullPath[COLETTE_PATH_BUF_SIZE];
-            joinPath(fullPath, sizeof(fullPath), curDir, entry->d_name);
-
             if (isReg(fullPath)) {
-                addToIndexFile(indexFile, entry->d_name);
+                addToIndexFile(indexFile, entry);
             } else if (isDir(fullPath)) {
-                addToIndexFile(indexFile, entry->d_name);
-                enqueue(&queue, fullPath);
+                addToIndexFile(indexFile, entry);
+                if (enqueue(&queue, fullPath) != 0) {
+                    reportProcessError(PROCESS_OP_HANDLE_INIT, curDir, PROC_ERR_MEMORY_ALLOC);
+                }
             }
+            free(nameList[i]);
         }
 
+        free(nameList);
+
         fclose(indexFile);
-        closedir(dir);
     }
 
     while (queue) {

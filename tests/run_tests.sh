@@ -6,6 +6,9 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 export TEST_DATA="$SCRIPT_DIR/testdata"
 export COLETTE="$PROJECT_ROOT/bin/colette"
 
+# Set locale
+export LC_ALL=C LANG=C
+
 # ANSI color codes for output
 export RED='\033[0;31m'
 export GREEN='\033[0;32m'
