@@ -1,6 +1,7 @@
 #include "constants.h"
 #include "errors.h"
 #include "files.h"
+#include "init.h"
 #include "process.h"
 #include "reporting.h"
 #include <errno.h>
@@ -595,6 +596,11 @@ int processProject(struct Arguments *args) {
         return -1;
     }
 
+    if (args->initMode) {
+        if (handleInit(args->directory) != 0) {
+            return -1;
+        }
+    }
     if (appendIndexState(&state.iter, args->directory) != 0) {
         freeProjectState(&state);
         return -1;
@@ -607,6 +613,9 @@ int processProject(struct Arguments *args) {
         freeProjectState(&state);
         return -1;
     }
+    if (args->initMode) {
+        handleInit(args->directory);
+    }
 
     while ((state.iter.status = getNextFile(&state.iter, &state.context)) !=
            ITER_END) {
@@ -614,9 +623,7 @@ int processProject(struct Arguments *args) {
             freeProjectState(&state);
             return -1;
         }
-        if (args->initMode) {
-            // handleInit
-        }
+
         if (state.handlerFunction) {
             enum FileHandlerStatus handlerStatus =
                 state.handlerFunction(&state.context);

@@ -2,6 +2,13 @@
 #define CONSTANTS_H
 
 /* *
+ * Enforce C99 standard when compiling
+ * */
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L
+#error "colette requires a C99-compatible compiler or newer"
+#endif
+
+/* *
  * Common system page size. Should be large enough buffer for most paths
  * */
 #define COLETTE_PATH_BUF_SIZE 4096

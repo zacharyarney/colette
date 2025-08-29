@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 
-/**
+/* *
  * Determines if a file or directory is to be included in the final output.
  *
  * Hidden files are denoted with a '.' or '_' prefix. User-created files are to
@@ -22,8 +22,30 @@
  * @return  bool
  *          true      if file should be included in finale output
  *          false     if file should be ignored
- **/
+ * */
 bool isIncluded(const char *fileName);
+
+/* *
+ * Determines if a path is a directory.
+ *
+ * @param   path    Name of path to be checked
+ *
+ * @return  bool
+ *          true    if path is a directory
+ *          false   if path is not a directory
+ * */
+bool isDir(const char *path);
+
+/* *
+ * Determines if a path is a regular file.
+ *
+ * @param   path    Name of path to be checked
+ *
+ * @return  bool
+ *          true    if path is a directory
+ *          false   if path is not a directory
+ * */
+bool isReg(const char *path);
 
 /* *
  * Distinguishes between directories and regular files and symbolic links.
